@@ -145,7 +145,6 @@ void loop() {
             chronoU2D.restart();
             long int count = 0;
             int timeout = 0;
-            digitalWrite(led, LOW);
             // Set the spinning direction counterclockwise:
             digitalWrite(dirPin, LOW);
             while (val_down == 1) {
