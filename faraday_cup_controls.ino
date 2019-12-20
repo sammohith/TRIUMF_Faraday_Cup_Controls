@@ -1,4 +1,5 @@
-//Include relevant libraries
+//Include relevant libraries, need to manually download Chrono.h
+// from IDE options
 
 #include<SPI.h> // Communicate with Serial-Monitor
 #include<Ethernet.h> // Communicate with Ethernet Shield and Clients
