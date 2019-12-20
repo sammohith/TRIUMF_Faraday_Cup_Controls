@@ -1,33 +1,33 @@
-#include<SPI.h>
-#include<Ethernet.h>
-#include<SD.h>
-#include<Chrono.h>
+//Include relevant libraries
 
-#define REQ_BUF_SZ 50
+#include<SPI.h> // Communicate with Serial-Monitor
+#include<Ethernet.h> // Communicate with Ethernet Shield and Clients
+#include<SD.h> // Speak to SD card on Ethernet Shield
+#include<Chrono.h> // Passive timer for auto-shut off
+
+#define REQ_BUF_SZ 50 // Size of GET request array
 
 // Define stepper motor connections and steps per revolution:
 int dirPin = 7;  // BLUE CABLE: Dig-Port 7
 int stepPin = 6; // PURPLE CABLE: Dig-Port 6
-int stepsPerRevolution = 200;
+int stepsPerRevolution = 200; // Steps per 360 degree motor revolution. From motor spec sheet.
 int upstream_switch = 3; //Dig-Port for upstream switch
 int downstream_switch = 2; //Dig-Port for downstream switch
-int val_up = 1;
-int val_down = 1;
+int val_up = 1; // Initialize upstream switch as ON
+int val_down = 1; // Initialize downstream switch as ON
 int Delay = 300; // Time delay between half-steps (microseconds)
-int max_count = 666;
-long int time_limit = 180000;
+int max_count = 666; // Counts for full path. Depends on Mechanical arrangement of rod and switches. Calibrate accordingly.
+long int time_limit = 180000; // Time limit (microseconds) for auto shut-off. If FC takes longer than this to get from one end to the other, turns off after this time (currently 3 minutes)
 
 //Ethernet set-up
-int led = 8;
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; //Arduino MAC Address
 EthernetServer Server(80);
-File webFile;
+File webFile; // For reading .htm file from SD card
 char HTTP_req[REQ_BUF_SZ] = {0};
 char req_index = 0;
 
-Chrono chronoD2U;
-Chrono chronoU2D;
-Chrono chrono_response;
+Chrono chronoD2U; //timer for Downstream-to-Upstream Motion
+Chrono chronoU2D; // timer for Upstream-to-Downstream Motion
 
 void setup() {
 
@@ -35,14 +35,14 @@ void setup() {
   pinMode(53, OUTPUT);
   digitalWrite(53, HIGH);
 
-  // Ethernet set-up:
+  // For debugging, and for Ethernet set-up
   Serial.begin(9600);
 
   // initialize SD card
   Serial.println("Initializing SD card...");
   if (!SD.begin(4)) {
     Serial.println("ERROR - SD card initialization failed!");
-    return;    // init failed
+    return;    // initialization failed
   }
   Serial.println("SUCCESS - SD card initialized.");
   // check for index.htm file
@@ -50,11 +50,11 @@ void setup() {
     Serial.println("ERROR - Can't find index.htm file!");
     return;  // can't find index file
   }
-  Serial.println("SUCCESS - Found index.htm file.");
-  Ethernet.begin(mac);
+  Serial.println("SUCCESS - Found index.htm file."); // index.htm file exists and is found
+  Ethernet.begin(mac); 
   Server.begin();
   Serial.print("Server is at ");
-  Serial.println(Ethernet.localIP());
+  Serial.println(Ethernet.localIP()); // For TRIUMF network, IP for this Arduino will always be: 142.90.121.164 . This will print on Serial monitor when server is initialized.
 
   //Stepper set-up
   pinMode(stepPin, OUTPUT);
@@ -70,11 +70,11 @@ void loop() {
   val_up = digitalRead(upstream_switch);
   val_down = digitalRead(downstream_switch);
 
-  EthernetClient client = Server.available();
+  EthernetClient client = Server.available(); // listen for clients
 
   if (client) {
 
-    boolean currentLineIsBlank = true;
+    boolean currentLineIsBlank = true; // HTML requests end with a blank line.
 
     while (client.connected()) {
 
@@ -87,16 +87,14 @@ void loop() {
           req_index++;
         }
 
-        if (c == '\n' && currentLineIsBlank) {
+        if (c == '\n' && currentLineIsBlank) { // if we receive a request
           client.println("HTTP/1.1 200 OK");
 
-          if (StrContains(HTTP_req, "buttonD2U")) {
+          if (StrContains(HTTP_req, "buttonD2U")) { //D2U request
 
-            chronoD2U.restart();
+            chronoD2U.restart(); //Start timer at zero
             long int count = 0;
             int timeout = 0;
-
-            digitalWrite(led, HIGH);
 
             // Set the spinning direction clockwise:
             digitalWrite(dirPin, HIGH);
@@ -104,7 +102,7 @@ void loop() {
             // Turn motor if FC has not reached destination:
             while (val_up == 1) {
 
-              if (chronoD2U.hasPassed(time_limit)) {
+              if (chronoD2U.hasPassed(time_limit)) { // check for timeout and send appropriate response
                 timeout = 1 ;
                 Serial.print("Error, took too long, did not reach target destination\n");
                 client.println("Content-Type: text/xml");
@@ -115,15 +113,15 @@ void loop() {
                 break;
               }
 
-              else {
+              else { // if not timeout, and if destination is not reached, take a step
                 TakeAStep(Delay);
                 count += 1;
-                val_up = digitalRead(upstream_switch);
+                val_up = digitalRead(upstream_switch); // check if switch is still ON
 
               }
             }
 
-            if (val_up == 0) {
+            if (val_up == 0) { // if after motion, switch is off, send appropriate response to client
               client.println("Content-Type: text/xml");
               client.println("Connection: keep-alive");
               client.println();
@@ -134,7 +132,7 @@ void loop() {
               Serial.print("\n");
             }
 
-            else {
+            else { // if not, then just stop doing anything and wait for further instructions
             }
 
             delay(1);
@@ -142,7 +140,7 @@ void loop() {
 
           }
 
-          else if (StrContains(HTTP_req, "buttonU2D")) {
+          else if (StrContains(HTTP_req, "buttonU2D")) { // same procedure as D2U, except in reverse direction now.
             
             chronoU2D.restart();
             long int count = 0;
@@ -227,8 +225,8 @@ void loop() {
     }// end while (client.connected())
 
 
-    delay(1);
-    client.stop();
+    delay(1); // give arduino breathing time
+    client.stop(); // close the connection to go back and wait for the next connection
 
 
   }
@@ -236,6 +234,7 @@ void loop() {
 
 
 
+// Function to make the motor take a step with d microseconds of delay between switching current between loops
 void TakeAStep(int d) {
   digitalWrite(stepPin, HIGH);
   delayMicroseconds(d);
@@ -243,10 +242,12 @@ void TakeAStep(int d) {
   delayMicroseconds(d);
 }
 
+
+// Function for sending XML response
 void XML_response(EthernetClient cl, int upstream_switch, int downstream_switch, int timeout)
 {
 
-  cl.print("<?xml version = \"1.0\" ?>");
+  cl.print("<?xml version = \"1.0\" ?>"); // indicate the XML format
   cl.print("<inputs>");
   cl.print("<upstream_switch>");
   cl.print(upstream_switch);
