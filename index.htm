@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- TO DO (did not get around to it myself): include GRIFFIN dashboard CSS-->
+<style>
+    
+    #PositionProgress {width: 60%; background-color: grey}
+    #ProgressBar {width: 1%; height: 30px; background-color: green}
+    
+</style>
+
+Control of Faraday Cup
+
+</head>    
+<body>
+
+<!-- Loading bar to show real-time position, does not currently work!!
+<div = 'position'>
+    <p> Position: </p>
+    <div id="PositionProgress">
+        <div id="ProgressBar"></div>
+    </div>    
+</div>
+-->
+<br><br>
+
+<div id="buttons">
+
+<button id = "U2D" onclick="U2D()">Upstream to Downstream</button>
+
+<button id = "D2U" onclick="D2U()">Downstream to Upstream</button>
+
+</div>
+    
+<br><br>
+
+<div = 'Status Update'>
+    Status Update: <p id = "StatusUpdate"></p>
+</div>
+</body>
+
+<script>    
+ 
+//window.onload=setInterval(GetPosition, 1000);
+function U2D(){
+    document.getElementById("StatusUpdate").innerHTML = "Moving from Upstream End to Downstream End";
+    nocache = "&nocache=" + Math.random()*1000000;
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+        if(this.responseXML != null){
+            var upstream_switch = this.responseXML.getElementsByTagName('upstream_switch')[0].childNodes[0].nodeValue;
+                
+            var downstream_switch = this.responseXML.getElementsByTagName('downstream_switch')[0].childNodes[0].nodeValue;
+                
+            var timeout = this.responseXML.getElementsByTagName('timeout')[0].childNodes[0].nodeValue;
+            
+            //document.getElementById("StatusUpdate").innerHTML = upstream_switch;
+            
+            if(downstream_switch == 1 && timeout == 1){
+                document.getElementById("StatusUpdate").innerHTML = "Motion took too long. Process aborted. Investigate for electrical/mechanical failure before reattempting";
+            }
+            
+            else if(downstream_switch == 0){
+                document.getElementById("StatusUpdate").innerHTML = "Downstream switch was closed. Successfully completed motion. Faraday Cup is at target location";
+            }
+        }
+    }
+  };
+  xhttp.open("GET", "buttonU2D"+nocache, true);
+  xhttp.send("process=begin");
+}
+
+
+function D2U(){
+    document.getElementById("StatusUpdate").innerHTML = "Moving from Downstream End to Upstream End";
+    var xhttp = new XMLHttpRequest();
+    nocache = "&nocache=" + Math.random()*1000000;
+    xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      
+        if(this.responseXML != null){
+            var upstream_switch = this.responseXML.getElementsByTagName('upstream_switch')[0].childNodes[0].nodeValue;
+                
+            var downstream_switch = this.responseXML.getElementsByTagName('downstream_switch')[0].childNodes[0].nodeValue;
+                
+            var timeout = this.responseXML.getElementsByTagName('timeout')[0].childNodes[0].nodeValue;
+            
+            //document.getElementById("StatusUpdate").innerHTML = downstream_switch;
+            
+            if(upstream_switch == 1 && timeout == 1){
+                document.getElementById("StatusUpdate").innerHTML = "Motion took too long. Process aborted. Investigate for electrical/mechanical failure before reattempting";
+            }
+            
+            else if(upstream_switch == 0){
+                document.getElementById("StatusUpdate").innerHTML = "Upstream switch was closed. Successfully completed motion. Faraday Cup is within shielded location";
+            }
+        }
+    }
+  };
+  xhttp.open("GET", "buttonD2U"+nocache, true);
+  xhttp.send("process=begin");
+}
+    
+
+/* -- This is for position update, does not currently work! --
+function GetPosition(){
+    
+    nocache = "&nocache=" + Math.random()*1000000;
+    var request_position = new XMLHttpRequest();
+    
+    request.onreadystatechange = function(){
+        
+        if(this.readyState == 4 && this.status == 200){
+            
+            if(this.responseXML != null){
+                
+                var count = this.responseXML.getElementsByTagName('count')[0].childNodes[0].nodeValue;
+                
+                var total_steps = this.responseXML.getElementsByTagName('total_steps')[0].childNodes[0].nodeValue;
+                
+                var steps_per_count = this.responseXML.getElementsByTagName('counts_per_step')[0].childNodes[0].nodeValue;
+                
+                updateprogress(count, total_steps, steps_per_count);
+            
+            }
+            
+        }
+    }
+    
+    request.open("GET", "position_inputs" + nocache, true);
+    request.send(null);
+}
+
+function updateprogress(count, total_steps, counts_per_step){
+    
+    var elem = document.getElementById("myBar");
+    var width = count/(counts_per_step * total_count);
+    elem.style.width = width + "%";
+    return 0;
+}
+
+*/
+    
+</script>
+</html>
