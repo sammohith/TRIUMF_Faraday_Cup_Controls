@@ -1,5 +1,7 @@
 # TRIUMF_Faraday_Cup_Controls
-Contains the .ino and .htm files for the GRIFFIN movable faraday cup control system
+Contains the .ino and .htm files for the GRIFFIN movable faraday cup control system.
+
+.htm file goes on SD card, .ino goes in the Arduino IDE editor.
 
 Instructions for uploading code and html to arduino.
 
