@@ -2,6 +2,7 @@
 <html>
 <head>
     <!-- TO DO (did not get around to it myself): include GRIFFIN dashboard CSS-->
+    <!-- Current style section is very basic but functional. Whoever is editing this, go nuts on the aesthetic -->
 <style>
     
     #PositionProgress {width: 60%; background-color: grey}
@@ -42,9 +43,11 @@ Control of Faraday Cup
 <script>    
  
 //window.onload=setInterval(GetPosition, 1000);
+    
+// send GET request upon pressing Upstream-to-Downstream button, and process response to give appropriate output.
 function U2D(){
     document.getElementById("StatusUpdate").innerHTML = "Moving from Upstream End to Downstream End";
-    nocache = "&nocache=" + Math.random()*1000000;
+    nocache = "&nocache=" + Math.random()*1000000; // gives unique ID for each request, avoid congestion and mix-ups
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
@@ -68,14 +71,15 @@ function U2D(){
     }
   };
   xhttp.open("GET", "buttonU2D"+nocache, true);
-  xhttp.send("process=begin");
+  xhttp.send("process=begin"); // not particularly necessary
 }
 
 
+// send GET request upon pressing Downstream-to-Upstream button, and process response to give appropriate output.
 function D2U(){
     document.getElementById("StatusUpdate").innerHTML = "Moving from Downstream End to Upstream End";
     var xhttp = new XMLHttpRequest();
-    nocache = "&nocache=" + Math.random()*1000000;
+    nocache = "&nocache=" + Math.random()*1000000;  // gives unique ID for each request, avoid congestion and mix-ups
     xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       
@@ -99,11 +103,12 @@ function D2U(){
     }
   };
   xhttp.open("GET", "buttonD2U"+nocache, true);
-  xhttp.send("process=begin");
+  xhttp.send("process=begin");  // not particularly necessary
 }
     
 
 /* -- This is for position update, does not currently work! --
+   -- Do not worry about this, it's for me to look at next summer --
 function GetPosition(){
     
     nocache = "&nocache=" + Math.random()*1000000;
