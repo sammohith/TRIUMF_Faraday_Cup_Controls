@@ -31,7 +31,7 @@ Chrono chronoU2D; // timer for Upstream-to-Downstream Motion
 
 void setup() {
 
-  // disable Ethernet chip
+  // disable Ethernet chip. Here, PIN 53 is specific to the Arduino Mega. Use PIN 10 for Arduino UNO.
   pinMode(53, OUTPUT);
   digitalWrite(53, HIGH);
 
